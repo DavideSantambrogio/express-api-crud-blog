@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const slugify = require('slugify');
 const posts = require('../data/data.json');
 
 // Funzione per ottenere tutti i post
@@ -30,11 +31,6 @@ exports.getPosts = (req, res) => {
             res.status(406).send('Not Acceptable');
         }
     });
-};
-
-// Funzione per generare uno slug univoco basato sul titolo del post
-const generateSlug = (title) => {
-    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 };
 
 // Funzione per visualizzare un singolo post
@@ -74,15 +70,15 @@ exports.getPostBySlug = (req, res) => {
 
 // Funzione per aggiungere un nuovo post
 exports.addPost = (req, res) => {
-    const { title, content, image, tags, slug } = req.body;
+    const { title, content, image, tags } = req.body;
 
     // Verifica che tutti i campi siano presenti nella richiesta
     if (!title || !content || !image || !tags) {
         return res.status(400).json({ error: 'Assicurati di fornire tutti i campi necessari: title, content, image e tags' });
     }
 
-    // Se non è stato fornito uno slug, generane uno automaticamente
-    const postSlug = slug ? slug : generateSlug(title);
+    // Genera lo slug usando slugify
+    const slug = slugify(title, { lower: true, strict: true });
 
     // Crea un nuovo post
     const newPost = {
@@ -90,7 +86,7 @@ exports.addPost = (req, res) => {
         content,
         image,
         tags: tags.split(',').map(tag => tag.trim()), // Converti la stringa dei tag in un array
-        slug: postSlug
+        slug
     };
 
     // Aggiungi il nuovo post all'array dei post
