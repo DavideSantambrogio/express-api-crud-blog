@@ -95,13 +95,21 @@ exports.addPost = [
         // Genera lo slug usando slugify
         const slug = slugify(title, { lower: true, strict: true });
 
+        // Verifica se lo slug è univoco
+        let uniqueSlug = slug;
+        let count = 1;
+        while (posts.find(post => post.slug === uniqueSlug)) {
+            uniqueSlug = `${slug}-${count}`;
+            count++;
+        }
+
         // Crea un nuovo post
         const newPost = {
             title,
             content,
             image: req.file.filename, // Usa il nome del file caricato
             tags: tags.split(',').map(tag => tag.trim()), // Converti la stringa dei tag in un array
-            slug
+            slug: uniqueSlug // Utilizza lo slug univoco
         };
 
         // Aggiungi il nuovo post all'array dei post
@@ -139,7 +147,7 @@ exports.createPostPage = (req, res) => {
         // Se la richiesta accetta HTML, restituisci una pagina HTML con un h1
         res.send('<h1>Creazione nuovo post</h1>');
     } else {
-        // Altrimenti, restituisci un errore 406 per indicare che il tipo di risposta non è accettato
+        // Altrimenti, restituisci un errore 406 per indicare che il tipo di risposta non è accettato.
         res.status(406).send('Not Acceptable');
     }
 };
@@ -166,3 +174,4 @@ exports.downloadImageBySlug = (req, res) => {
         console.log('Immagine scaricata correttamente.');
     });
 };
+
