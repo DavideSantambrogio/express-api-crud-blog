@@ -1,7 +1,20 @@
 const fs = require('fs');
 const path = require('path');
 const slugify = require('slugify');
+const multer = require('multer');
 const posts = require('../data/data.json');
+
+// Configurazione multer per salvare le immagini caricate
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'public/imgs/posts');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + '-' + file.originalname);
+    }
+});
+const upload = multer({ storage: storage });
 
 // Funzione per ottenere tutti i post
 exports.getPosts = (req, res) => {
@@ -69,51 +82,54 @@ exports.getPostBySlug = (req, res) => {
 };
 
 // Funzione per aggiungere un nuovo post
-exports.addPost = (req, res) => {
-    const { title, content, image, tags } = req.body;
+exports.addPost = [
+    upload.single('image'), // Middleware per gestire l'upload del file
+    (req, res) => {
+        const { title, content, tags } = req.body;
 
-    // Verifica che tutti i campi siano presenti nella richiesta
-    if (!title || !content || !image || !tags) {
-        return res.status(400).json({ error: 'Assicurati di fornire tutti i campi necessari: title, content, image e tags' });
-    }
-
-    // Genera lo slug usando slugify
-    const slug = slugify(title, { lower: true, strict: true });
-
-    // Crea un nuovo post
-    const newPost = {
-        title,
-        content,
-        image,
-        tags: tags.split(',').map(tag => tag.trim()), // Converti la stringa dei tag in un array
-        slug
-    };
-
-    // Aggiungi il nuovo post all'array dei post
-    posts.push(newPost);
-
-    // Scrivi i dati aggiornati nel file data.json
-    const dataFilePath = path.join(__dirname, '../data/data.json');
-    fs.writeFile(dataFilePath, JSON.stringify(posts, null, 2), (err) => {
-        if (err) {
-            console.error('Errore durante il salvataggio dei dati:', err);
-            return res.status(500).json({ error: 'Errore durante il salvataggio dei dati' });
+        // Verifica che tutti i campi siano presenti nella richiesta
+        if (!title || !content || !req.file || !tags) {
+            return res.status(400).json({ error: 'Assicurati di fornire tutti i campi necessari: title, content, image e tags' });
         }
-        console.log('Dati salvati correttamente.');
 
-        res.format({
-            'application/json': function () {
-                res.status(201).json(newPost);
-            },
-            'text/html': function () {
-                res.redirect(`/posts/${newPost.slug}`);
-            },
-            default: function () {
-                res.status(406).send('Not Acceptable');
+        // Genera lo slug usando slugify
+        const slug = slugify(title, { lower: true, strict: true });
+
+        // Crea un nuovo post
+        const newPost = {
+            title,
+            content,
+            image: req.file.filename, // Usa il nome del file caricato
+            tags: tags.split(',').map(tag => tag.trim()), // Converti la stringa dei tag in un array
+            slug
+        };
+
+        // Aggiungi il nuovo post all'array dei post
+        posts.push(newPost);
+
+        // Scrivi i dati aggiornati nel file data.json
+        const dataFilePath = path.join(__dirname, '../data/data.json');
+        fs.writeFile(dataFilePath, JSON.stringify(posts, null, 2), (err) => {
+            if (err) {
+                console.error('Errore durante il salvataggio dei dati:', err);
+                return res.status(500).json({ error: 'Errore durante il salvataggio dei dati' });
             }
+            console.log('Dati salvati correttamente.');
+
+            res.format({
+                'application/json': function () {
+                    res.status(201).json(newPost);
+                },
+                'text/html': function () {
+                    res.redirect(`/posts/${newPost.slug}`);
+                },
+                default: function () {
+                    res.status(406).send('Not Acceptable');
+                }
+            });
         });
-    });
-};
+    }
+];
 
 // Funzione per creare una pagina per la creazione di un nuovo post
 exports.createPostPage = (req, res) => {
