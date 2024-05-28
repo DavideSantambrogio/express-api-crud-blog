@@ -175,3 +175,39 @@ exports.downloadImageBySlug = (req, res) => {
     });
 };
 
+// Funzione per eliminare un post
+exports.deletePost = (req, res) => {
+    const slug = req.params.slug;
+    const index = posts.findIndex(post => post.slug === slug);
+
+    // Verifica se il post è stato trovato
+    if (index === -1) {
+        // Se il post non è stato trovato, restituisci un errore 404
+        return res.status(404).json({ error: 'Post not found' });
+    }
+
+    // Rimuovi il post dall'array dei post
+    const deletedPost = posts.splice(index, 1)[0];
+
+    // Scrivi i dati aggiornati nel file data.json
+    const dataFilePath = path.join(__dirname, '../data/data.json');
+    fs.writeFile(dataFilePath, JSON.stringify(posts, null, 2), (err) => {
+        if (err) {
+            console.error('Errore durante il salvataggio dei dati:', err);
+            return res.status(500).json({ error: 'Errore durante il salvataggio dei dati' });
+        }
+        console.log('Dati salvati correttamente.');
+
+        res.format({
+            'application/json': function () {
+                res.status(200).json({ message: 'Post eliminato' });
+            },
+            'text/html': function () {
+                res.redirect('/posts');
+            },
+            default: function () {
+                res.status(200).send('Post eliminato');
+            }
+        });
+    });
+};
