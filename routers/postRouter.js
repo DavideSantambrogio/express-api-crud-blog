@@ -4,7 +4,7 @@ const postsController = require('../controllers/postsController');
 
 // Rotte per l'entità post
 router.get('/', postsController.getPosts);
-router.post('/', postsController.addPost);
+router.post('/', postsController.addPost); // Rotta POST per creare un nuovo post
 
 // Rotta per visualizzare la pagina di creazione di un nuovo post
 router.get('/create', postsController.createPostPage);

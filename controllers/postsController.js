@@ -32,6 +32,10 @@ exports.getPosts = (req, res) => {
     });
 };
 
+// Funzione per generare uno slug univoco basato sul titolo del post
+const generateSlug = (title) => {
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+};
 
 // Funzione per visualizzare un singolo post
 exports.getPostBySlug = (req, res) => {
@@ -44,7 +48,6 @@ exports.getPostBySlug = (req, res) => {
     }
 
     post.image_url = `/imgs/posts/${post.image}`;
-
 
     res.format({
         'application/json': function () {
@@ -71,19 +74,23 @@ exports.getPostBySlug = (req, res) => {
 
 // Funzione per aggiungere un nuovo post
 exports.addPost = (req, res) => {
-    const { title, content, image, tags } = req.body;
+    const { title, content, image, tags, slug } = req.body;
 
     // Verifica che tutti i campi siano presenti nella richiesta
     if (!title || !content || !image || !tags) {
         return res.status(400).json({ error: 'Assicurati di fornire tutti i campi necessari: title, content, image e tags' });
     }
 
+    // Se non è stato fornito uno slug, generane uno automaticamente
+    const postSlug = slug ? slug : generateSlug(title);
+
     // Crea un nuovo post
     const newPost = {
         title,
         content,
         image,
-        tags
+        tags: tags.split(',').map(tag => tag.trim()), // Converti la stringa dei tag in un array
+        slug: postSlug
     };
 
     // Aggiungi il nuovo post all'array dei post
@@ -97,8 +104,18 @@ exports.addPost = (req, res) => {
             return res.status(500).json({ error: 'Errore durante il salvataggio dei dati' });
         }
         console.log('Dati salvati correttamente.');
-        // Invia una risposta con il nuovo post aggiunto e lo status code 201 Created
-        res.status(201).json(newPost);
+
+        res.format({
+            'application/json': function () {
+                res.status(201).json(newPost);
+            },
+            'text/html': function () {
+                res.redirect(`/posts/${newPost.slug}`);
+            },
+            default: function () {
+                res.status(406).send('Not Acceptable');
+            }
+        });
     });
 };
 

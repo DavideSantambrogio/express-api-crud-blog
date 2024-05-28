@@ -1,10 +1,10 @@
 const express = require('express');
 const app = express();
 const postRouter = require('./routers/postRouter'); // Importa il router per le rotte dei post
-const postsController = require('./controllers/postsController'); // Importa il controller dei post
 
 // Middleware per il parsing del corpo della richiesta
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Middleware per application/x-www-form-urlencoded
 
 // Configurare gli asset statici
 app.use(express.static('public'));
@@ -18,7 +18,6 @@ app.get('/', (req, res) => {
         <a href="/posts">Visualizza tutti i post</a>
     `);
 });
-
 
 // Gestione della favicon
 app.get('/favicon.ico', (req, res) => {
